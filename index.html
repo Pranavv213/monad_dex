@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monad DEX AI Agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-6 font-sans">
+  <div class="max-w-4xl mx-auto space-y-6">
+    
+    <!-- Header & Config -->
+    <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 space-y-4">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-2xl font-bold text-purple-400">🤖 Monad DEX AI Agent</h1>
+          <p class="text-xs text-gray-400 mt-1 font-mono">DEX: 0x01D54E386b8cfBfFf48A0667cA1885818F761552</p>
+        </div>
+        <button id="connectBtn" onclick="connectWallet()" class="bg-purple-600 hover:bg-purple-700 text-white font-medium px-4 py-2 rounded-lg transition">
+          Connect Wallet
+        </button>
+      </div>
+      
+      <!-- API Key Input -->
+      
+
+    <!-- Chat & Agent Box -->
+    <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 space-y-4">
+      <h2 class="text-lg font-semibold text-purple-300">Prompt the AI Agent</h2>
+      
+      <!-- Quick Prompts -->
+      <div class="text-xs text-gray-400 flex flex-wrap gap-2">
+        <span class="text-gray-500">Examples:</span>
+        <button onclick="setPrompt('Add liquidity with 10 of 0xTOKEN_A and 20 of 0xTOKEN_B')" class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-2.5 py-1 rounded">Add Liquidity</button>
+        <button onclick="setPrompt('Swap 5 of 0xTOKEN_A to 0xTOKEN_B')" class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-2.5 py-1 rounded">Swap</button>
+        <button onclick="setPrompt('Get reserves for token 0xTOKEN_A and token 0xTOKEN_B')" class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-2.5 py-1 rounded">Get Reserves</button>
+      </div>
+
+      <!-- Prompt Input -->
+      <div class="flex gap-2">
+        <input id="promptInput" type="text" placeholder="e.g. Add liquidity: 100 of 0x111... and 200 of 0x222..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm focus:outline-none focus:border-purple-500">
+        <button id="sendBtn" onclick="processPrompt()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-lg transition flex items-center gap-2">
+          Send
+        </button>
+      </div>
+
+      <!-- Agent Terminal Logs -->
+      <div id="terminal" class="bg-black/80 border border-gray-700 rounded-lg p-4 font-mono text-xs space-y-2 h-64 overflow-y-auto">
+        <div class="text-gray-500">[System] AI Agent initialized. Connect wallet and enter Gemini API key to start.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const DEX_ADDRESS = "0x01D54E386b8cfBfFf48A0667cA1885818F761552";
+    
+    const DEX_ABI = [
+      "function addLiquidity(address tokenA, address tokenB, uint256 amountA, uint256 amountB) external returns (uint256 shares)",
+      "function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minAmountOut) external returns (uint256 amountOut)",
+      "function getReserves(address tokenA, address tokenB) external view returns (uint256 reserveA, uint256 reserveB)",
+      "function getPoolId(address tokenA, address tokenB) external view returns (bytes32 poolId, address token0, address token1)"
+    ];
+
+    const ERC20_ABI = [
+      "function approve(address spender, uint256 amount) external returns (bool)",
+      "function decimals() external view returns (uint8)"
+    ];
+
+    let provider, signer, dexContract;
+
+    function log(msg, type = "info") {
+      const term = document.getElementById("terminal");
+      const el = document.createElement("div");
+      if (type === "error") el.className = "text-red-400";
+      else if (type === "success") el.className = "text-green-400";
+      else if (type === "ai") el.className = "text-purple-400 font-semibold";
+      else el.className = "text-yellow-400";
+      
+      el.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      term.appendChild(el);
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function setPrompt(text) {
+      document.getElementById("promptInput").value = text;
+    }
+
+    async function connectWallet() {
+      if (!window.ethereum) return alert("MetaMask not detected.");
+      try {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        dexContract = new ethers.Contract(DEX_ADDRESS, DEX_ABI, signer);
+        
+        document.getElementById("connectBtn").innerText = address.slice(0, 6) + "..." + address.slice(-4);
+        log(`Wallet connected: ${address}`, "success");
+      } catch (err) {
+        log(`Wallet Error: ${err.message}`, "error");
+      }
+    }
+
+    // Gemini API Declarations (Function Calling Tools)
+    const geminiTools = [{
+      functionDeclarations: [
+        {
+          name: "addLiquidity",
+          description: "Approves two tokens for MaxUint256 and adds liquidity to the DEX pool.",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              tokenA: { type: "STRING", description: "Contract address of Token A" },
+              tokenB: { type: "STRING", description: "Contract address of Token B" },
+              amountA: { type: "STRING", description: "Human readable amount for Token A (e.g. '10.5')" },
+              amountB: { type: "STRING", description: "Human readable amount for Token B (e.g. '20.0')" }
+            },
+            required: ["tokenA", "tokenB", "amountA", "amountB"]
+          }
+        },
+        {
+          name: "swapTokens",
+          description: "Approves tokenIn for MaxUint256 and swaps it for tokenOut with minAmountOut set to 0.",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              tokenIn: { type: "STRING", description: "Contract address of input token" },
+              tokenOut: { type: "STRING", description: "Contract address of output token" },
+              amountIn: { type: "STRING", description: "Human readable amount of tokenIn to swap" }
+            },
+            required: ["tokenIn", "tokenOut", "amountIn"]
+          }
+        },
+        {
+          name: "getReserves",
+          description: "Reads and fetches current liquidity reserves for a token pair from the DEX.",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              tokenA: { type: "STRING", description: "Contract address of Token A" },
+              tokenB: { type: "STRING", description: "Contract address of Token B" }
+            },
+            required: ["tokenA", "tokenB"]
+          }
+        }
+      ]
+    }];
+
+    async function processPrompt() {
+     const apiKey = "";
+      const prompt = document.getElementById("promptInput").value.trim();
+
+      if (!apiKey) return alert("Please enter your Gemini API Key.");
+      if (!prompt) return alert("Please enter a prompt.");
+      if (!signer) await connectWallet();
+
+      log(`User Prompt: "${prompt}"`);
+      log("Sending prompt to Gemini API...", "ai");
+
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            tools: geminiTools
+          })
+        });
+
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error.message);
+        }
+
+        const candidate = data.candidates?.[0];
+        const call = candidate?.content?.parts?.[0]?.functionCall;
+
+        if (!call) {
+          log(`Gemini response: ${candidate?.content?.parts?.[0]?.text || 'No actionable function found.'}`, "ai");
+          return;
+        }
+
+        log(`AI Decision: Execute function '${call.name}'`, "ai");
+        log(`Extracted Parameters: ${JSON.stringify(call.args)}`, "ai");
+
+        // Execute function based on Gemini's call
+        if (call.name === "addLiquidity") {
+          await executeAddLiquidity(call.args);
+        } else if (call.name === "swapTokens") {
+          await executeSwap(call.args);
+        } else if (call.name === "getReserves") {
+          await executeGetReserves(call.args);
+        }
+
+      } catch (err) {
+        log(`Execution Error: ${err.message}`, "error");
+      }
+    }
+
+    // =========================================================================
+    // WEB3 CONTRACT EXECUTORS
+    // =========================================================================
+
+    async function executeAddLiquidity({ tokenA, tokenB, amountA, amountB }) {
+      log("Executing Add Liquidity sequence...");
+
+      const contractA = new ethers.Contract(tokenA, ERC20_ABI, signer);
+      const contractB = new ethers.Contract(tokenB, ERC20_ABI, signer);
+
+      const decA = await contractA.decimals();
+      const decB = await contractB.decimals();
+
+      const parsedA = ethers.parseUnits(amountA.toString(), decA);
+      const parsedB = ethers.parseUnits(amountB.toString(), decB);
+
+      log(`Approving Token A (${tokenA}) for MaxUint256...`);
+      const txA = await contractA.approve(DEX_ADDRESS, ethers.MaxUint256);
+      await txA.wait();
+
+      log(`Approving Token B (${tokenB}) for MaxUint256...`);
+      const txB = await contractB.approve(DEX_ADDRESS, ethers.MaxUint256);
+      await txB.wait();
+
+      log("Calling addLiquidity on DEX...");
+      const txAdd = await dexContract.addLiquidity(tokenA, tokenB, parsedA, parsedB);
+      log(`Tx sent: ${txAdd.hash}`);
+      await txAdd.wait();
+
+      log("Liquidity successfully added!", "success");
+    }
+
+    async function executeSwap({ tokenIn, tokenOut, amountIn }) {
+      log("Executing Swap sequence...");
+
+      const contractIn = new ethers.Contract(tokenIn, ERC20_ABI, signer);
+      const decIn = await contractIn.decimals();
+      const parsedIn = ethers.parseUnits(amountIn.toString(), decIn);
+
+      log(`Approving Token In (${tokenIn}) for MaxUint256...`);
+      const txApp = await contractIn.approve(DEX_ADDRESS, ethers.MaxUint256);
+      await txApp.wait();
+
+      log("Calling swap with minAmountOut = 0...");
+      const txSwap = await dexContract.swap(tokenIn, tokenOut, parsedIn, 0);
+      log(`Tx sent: ${txSwap.hash}`);
+      await txSwap.wait();
+
+      log("Swap executed successfully!", "success");
+    }
+
+    async function executeGetReserves({ tokenA, tokenB }) {
+      log("Fetching pool reserves...");
+      const [resA, resB] = await dexContract.getReserves(tokenA, tokenB);
+      log(`Reserves fetched! Token A Reserve: ${resA.toString()} | Token B Reserve: ${resB.toString()}`, "success");
+    }
+  </script>
+</body>
+</html>
