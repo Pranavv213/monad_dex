@@ -60,13 +60,13 @@ This project introduces a **"Command & Observe" AI Terminal**:
                               │
                               ▼
                  ┌─────────────────────────┐
-                 │  Gemini 2.0 Flash API   │
+                 │  AI Execution  │
                  │   (Function Extraction) │
                  └────────────┬────────────┘
                               │
                               ▼
 ┌──────────────────────────────────────────────────────────┐
-│                   Ethers.js v6 Execution                 │
+│                  Web3 Execution                 │
 │                                                          │
 │  1. Check Decimals ──► 2. Approve Token ──► 3. Execute   │
 └────────────────────────────┬─────────────────────────────┘
@@ -78,7 +78,7 @@ This project introduces a **"Command & Observe" AI Terminal**:
                               │
                               ▼
                  ┌─────────────────────────┐
-                 │   Chart.js Real-time    │
+                 │    Real-time    │
                  │  Reserve Sync & Plot    │
                  └─────────────────────────┘
 
