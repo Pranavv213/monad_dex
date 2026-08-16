@@ -1,9 +1,9 @@
 
 ---
 
-# 🌐 Monad Cyber-DEX AI Agent
+# 🌐 Monad DEX AI Agent
 
-An autonomous, natural language-driven Decentralized Exchange (DEX) interface built on the **Monad Testnet**. This project bridges the gap between complex Web3 transactions and natural human conversation by pairing **Gemini 2.0 Flash** with **Ethers.js v6** and real-time data visualization.
+An autonomous, natural language-driven Decentralized Exchange (DEX) interface built on the **Monad Testnet**. This project bridges the gap between complex Web3 transactions and natural human conversation by pairing AI with DeFi and real-time data visualization.
 
 ---
 
@@ -16,11 +16,11 @@ Executing transactions on a Decentralized Exchange (DEX) usually requires manual
 This project introduces a **"Command & Observe" AI Terminal**:
 
 * **Command:** Users interact using natural, everyday English (e.g., *"Swap 5 of Token A to Token B"* or *"Check pool reserves"*).
-* **Observe:** An integrated, dynamic **Chart.js** interface streams a continuous live ticker while idle and locks directly onto real-time, on-chain pool balances the moment an operation completes.
+* **Observe:** An integrated, dynamic **Chart** interface streams a continuous live ticker while idle and locks directly onto real-time, on-chain pool balances the moment an operation completes.
 
 ### 2. Key Objectives
 
-* **Zero UI Friction:** Replaces repetitive manual inputs with natural language processing via Gemini 2.0 Flash tool-calling.
+* **Zero UI Friction:** Replaces repetitive manual inputs with natural language processing via AI Flash tool-calling.
 * **Automated Web3 Pipeline:** Handles token decimals, ERC-20 `approve` calls, and contract execution in a single automated workflow.
 * **Visual On-Chain Feedback:** Features a live, cyberpunk-styled chart that transitions from idle simulation to precise on-chain reserve plotting following every swap or liquidity update.
 * **Lightweight & Portable:** Built entirely as a single-file Web interface (`index.html`) using CDNs—requiring zero build tools, node modules, or complex setup.
@@ -29,7 +29,7 @@ This project introduces a **"Command & Observe" AI Terminal**:
 
 ## 🚀 Key Features
 
-* **🤖 Intent-Driven Web3 Agent:** Leverages Gemini 2.0 Flash function-calling to detect parameters (token addresses, amounts) and trigger contract methods directly.
+* **🤖 Intent-Driven Web3 Agent:** Leverages AI function-calling to detect parameters (token addresses, amounts) and trigger contract methods directly.
 * **📊 Live Dynamic Reserve Visualizer:**
 * **Idle Mode:** Animates a dynamic, real-time "zig-zag" streaming line while awaiting input.
 * **On-Chain Sync:** Instantly syncs and plots real reserve balances on-chain when a swap, liquidity addition, or reserve query occurs.
